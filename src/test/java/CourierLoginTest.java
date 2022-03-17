@@ -23,8 +23,6 @@ public class CourierLoginTest {
     public void courierCanLogin() {
         ScooterRegisterCourier courier = new ScooterRegisterCourier();
         ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
-        Allure.addAttachment("login", list.get(0));
-        Allure.addAttachment("password", list.get(1));
         String loginRequestBody = "{\"login\":\"" + list.get(0) + "\","
                 + "\"password\":\"" + list.get(1) + "\"}";
 
@@ -34,9 +32,15 @@ public class CourierLoginTest {
                 .body(loginRequestBody)
                 .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(200);
-        response.then().body("id", not(notANumber()));
+        response.then().assertThat().body("id", not(notANumber()));
 
+        int id = response.then().extract().body().path("id");
+        given()
+                .header("Content-type", "application/json")
+                .and()
+                .delete("/api/v1/courier/{id}", id);
     }
+
 
     @Test
     @DisplayName("Courier cannot login without login")
@@ -51,7 +55,7 @@ public class CourierLoginTest {
                 .body(loginRequestBody)
                 .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(400);
-        response.then().body("message", equalTo("Недостаточно данных для входа"));
+        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
 
 
@@ -68,7 +72,7 @@ public class CourierLoginTest {
                 .body(loginRequestBody)
                 .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(400);
-        response.then().body("message", equalTo("Недостаточно данных для входа"));
+        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
 
     @Test
@@ -80,7 +84,7 @@ public class CourierLoginTest {
                 .and()
                 .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(400);
-        response.then().body("message", equalTo("Недостаточно данных для входа"));
+        response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
 
 
@@ -96,4 +100,38 @@ public class CourierLoginTest {
         response.then().assertThat().statusCode(404);
         response.then().body("message", equalTo("Учетная запись не найдена"));
     }
+
+
+    @Test
+    @DisplayName("Courier cannot login with invalid password")
+    public void courierCannotLoginWithInvalidPassword() {
+        ScooterRegisterCourier courier = new ScooterRegisterCourier();
+        ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
+        String loginRequestBody = "{\"login\":\"" + list.get(0) + "\","
+                + "\"password\":\"" + list.get(1) + "\"}";
+
+        int id = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(loginRequestBody)
+                .post("/api/v1/courier/login")
+                .then().extract().body().path("id");
+
+        String secondLoginRequestBody = "{\"login\":\"" + list.get(0) + "\","
+                + "\"password\":\"" + list.get(1) + "test\"}";
+        Response secondResponse = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(secondLoginRequestBody)
+                .post("/api/v1/courier/login");
+        secondResponse.then().assertThat().statusCode(404);
+        secondResponse.then().assertThat().body("message", equalTo("Учетная запись не найдена"));
+
+        given()
+                .header("Content-type", "application/json")
+                .and()
+                .delete("/api/v1/courier/{id}", id);
+    }
 }
+
+

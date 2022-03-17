@@ -1,6 +1,10 @@
+import io.restassured.response.Response;
 import org.apache.commons.lang3.RandomStringUtils;
 
-import java.util.ArrayList;
+import java.util.zip.CheckedOutputStream;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
 
 public class Courier {
 
@@ -9,6 +13,7 @@ public class Courier {
         this.password = password;
         this.firstName = firstName;
     }
+
     public Courier() {
     }
 
@@ -16,7 +21,7 @@ public class Courier {
         final String login = RandomStringUtils.randomAlphabetic(10);
         final String password = RandomStringUtils.randomAlphabetic(10);
         final String firstName = RandomStringUtils.randomAlphabetic(10);
-        return new Courier(login,password,firstName);
+        return new Courier(login, password, firstName);
     }
 
     public String getLogin() {
@@ -41,6 +46,24 @@ public class Courier {
 
     public void setFirstName(String firstName) {
         this.firstName = firstName;
+    }
+
+    public void deleteCourier(Courier courier) {
+        int id = given()
+                .header("Content-type", "application/json")
+                .and()
+                .body(courier)
+                .post("/api/v1/courier/login")
+                .then().extract().body().path("id");
+
+        Response response = given()
+                .header("Content-type", "application/json")
+                .and()
+                .delete("/api/v1/courier/{id}",id);
+
+        response.then().assertThat().statusCode(200);
+        response.then().assertThat().body("ok", equalTo(true));
+
     }
 
     private String login;

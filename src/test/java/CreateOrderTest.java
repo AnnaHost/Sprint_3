@@ -1,3 +1,4 @@
+import io.qameta.allure.Allure;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -43,22 +44,23 @@ public class CreateOrderTest {
                 .and()
                 .post("/api/v1/orders");
 
-        response.then().statusCode(201);
-        response.then().body("track", not(notANumber()));
+        response.then().assertThat().statusCode(201);
+        response.then().assertThat().body("track", not(notANumber()));
     }
 
     @Test
     @DisplayName("Create order with colors")
     public void createOrderWithColors() {
         Order order = new Order(color);
+        Allure.addAttachment("Color",color);
         Response response = given()
                 .header("Content-type", "application/json")
                 .and()
                 .body(order)
                 .post("/api/v1/orders");
 
-        response.then().statusCode(201);
-        response.then().body("track", not(notANumber()));
+        response.then().assertThat().statusCode(201);
+        response.then().assertThat().body("track", not(notANumber()));
     }
 }
 

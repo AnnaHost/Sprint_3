@@ -1,3 +1,8 @@
+import io.restassured.response.Response;
+
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.equalTo;
+
 public class Order {
 
     public String getFirstName() {
@@ -93,7 +98,8 @@ public class Order {
         this.rentTime = 5;
         this.deliveryDate = "2020-06-06";
         this.comment = "Saske, come back to Konoha";
-        this.color = new String[]{stringColor};;
+        this.color = new String[]{stringColor};
+
     }
 
     public Order() {
