@@ -1,14 +1,16 @@
-import io.qameta.allure.Allure;
+import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import static io.restassured.RestAssured.given;
-import static org.hamcrest.Matchers.*;
-
 import java.util.ArrayList;
+
+import static io.restassured.RestAssured.given;
+import static io.restassured.RestAssured.reset;
+import static org.hamcrest.Matchers.*;
 
 public class CourierLoginTest {
 
@@ -18,42 +20,29 @@ public class CourierLoginTest {
     }
 
 
+
     @Test
     @DisplayName("Courier can login")
     public void courierCanLogin() {
-        ScooterRegisterCourier courier = new ScooterRegisterCourier();
-        ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
-        String loginRequestBody = "{\"login\":\"" + list.get(0) + "\","
-                + "\"password\":\"" + list.get(1) + "\"}";
+        ScooterRegisterCourier regCourier = new ScooterRegisterCourier();
+        ArrayList<String> list = regCourier.registerNewCourierAndReturnLoginPassword();
+        Courier courier = new Courier(list.get(0), list.get(1));
+        Response response = sendPostRequestCourierLogin(courier);
 
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(loginRequestBody)
-                .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(200);
         response.then().assertThat().body("id", not(notANumber()));
 
-        int id = response.then().extract().body().path("id");
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .delete("/api/v1/courier/{id}", id);
     }
 
 
     @Test
     @DisplayName("Courier cannot login without login")
     public void courierCannotLoginWithoutLogin() {
-        ScooterRegisterCourier courier = new ScooterRegisterCourier();
-        ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
-        String loginRequestBody = "{\"login\":\"" + list.get(0) + "\"}";
+        ScooterRegisterCourier regCourier = new ScooterRegisterCourier();
+        ArrayList<String> list = regCourier.registerNewCourierAndReturnLoginPassword();
+        Courier courier = new Courier(list.get(0));
+        Response response = sendPostRequestCourierLogin(courier);
 
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(loginRequestBody)
-                .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(400);
         response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
@@ -62,15 +51,11 @@ public class CourierLoginTest {
     @Test
     @DisplayName("Courier cannot login without password")
     public void courierCannotLoginWithoutPassword() {
-        ScooterRegisterCourier courier = new ScooterRegisterCourier();
-        ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
-        String loginRequestBody = "{\"password\":\"" + list.get(1) + "\"}";
+        ScooterRegisterCourier regCourier = new ScooterRegisterCourier();
+        ArrayList<String> list = regCourier.registerNewCourierAndReturnLoginPassword();
+        Courier courier = new Courier(list.get(1));
+        Response response = sendPostRequestCourierLogin(courier);
 
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(loginRequestBody)
-                .post("/api/v1/courier/login");
         response.then().assertThat().statusCode(400);
         response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
@@ -78,11 +63,8 @@ public class CourierLoginTest {
     @Test
     @DisplayName("Courier cannot login without login and password")
     public void courierCannotLoginWithoutLoginAndPassword() {
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .post("/api/v1/courier/login");
+        Courier courier = new Courier();
+        Response response = sendPostRequestCourierLogin(courier);
         response.then().assertThat().statusCode(400);
         response.then().assertThat().body("message", equalTo("Недостаточно данных для входа"));
     }
@@ -92,11 +74,7 @@ public class CourierLoginTest {
     @DisplayName("Courier cannot login without registration")
     public void courierCannotLoginWithoutRegistration() {
         Courier courier = Courier.getRandom();
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(courier)
-                .post("/api/v1/courier/login");
+        Response response = sendPostRequestCourierLogin(courier);
         response.then().assertThat().statusCode(404);
         response.then().body("message", equalTo("Учетная запись не найдена"));
     }
@@ -105,33 +83,24 @@ public class CourierLoginTest {
     @Test
     @DisplayName("Courier cannot login with invalid password")
     public void courierCannotLoginWithInvalidPassword() {
-        ScooterRegisterCourier courier = new ScooterRegisterCourier();
-        ArrayList<String> list = courier.registerNewCourierAndReturnLoginPassword();
-        String loginRequestBody = "{\"login\":\"" + list.get(0) + "\","
-                + "\"password\":\"" + list.get(1) + "\"}";
+        ScooterRegisterCourier regCourier = new ScooterRegisterCourier();
+        ArrayList<String> list = regCourier.registerNewCourierAndReturnLoginPassword();
+        Courier courier = new Courier(list.get(0), list.get(1));
+        sendPostRequestCourierLogin(courier);
+        Courier courierWithInvalidPassword = new Courier(list.get(0), (list.get(1) + "test"));
 
-        int id = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(loginRequestBody)
-                .post("/api/v1/courier/login")
-                .then().extract().body().path("id");
+        Response response = sendPostRequestCourierLogin(courierWithInvalidPassword);
+        response.then().assertThat().statusCode(404);
+        response.then().assertThat().body("message", equalTo("Учетная запись не найдена"));
 
-        String secondLoginRequestBody = "{\"login\":\"" + list.get(0) + "\","
-                + "\"password\":\"" + list.get(1) + "test\"}";
-        Response secondResponse = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(secondLoginRequestBody)
-                .post("/api/v1/courier/login");
-        secondResponse.then().assertThat().statusCode(404);
-        secondResponse.then().assertThat().body("message", equalTo("Учетная запись не найдена"));
-
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .delete("/api/v1/courier/{id}", id);
     }
+
+    @Step("Send POST request")
+    public Response sendPostRequestCourierLogin(Courier courier) {
+        Response response = given().header("Content-type", "application/json").and().body(courier).post("/api/v1/courier/login");
+        return response;
+    }
+
 }
 
 

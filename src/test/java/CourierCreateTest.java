@@ -1,4 +1,5 @@
 
+import io.qameta.allure.Step;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
 import io.restassured.response.Response;
@@ -20,12 +21,7 @@ public class CourierCreateTest {
     @DisplayName("Create courier")
     public void canCreateCourier() {
         Courier courier = Courier.getRandom();
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(courier)
-                .when()
-                .post("/api/v1/courier");
+        Response response = sendPostRequestCourierRegistration(courier);
         response.then().assertThat().statusCode(201);
         response.then().assertThat().body("ok", equalTo(true));
         courier.deleteCourier(courier);
@@ -35,19 +31,8 @@ public class CourierCreateTest {
     @DisplayName("Cannot create 2 equal couriers")
     public void cantCreateTwoEqualCouriers() {
         Courier courier = Courier.getRandom();
-        given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(courier)
-                .when()
-                .post("/api/v1/courier");
-
-        Response response = given()
-                .header("Content-type", "application/json")
-                .and()
-                .body(courier)
-                .when()
-                .post("/api/v1/courier");
+        sendPostRequestCourierRegistration(courier);
+        Response response = sendPostRequestCourierRegistration(courier);
         response.then().assertThat().statusCode(409);
         response.then().assertThat().body("message",equalTo("Этот логин уже используется. Попробуйте другой."));
         courier.deleteCourier(courier);
@@ -58,13 +43,7 @@ public class CourierCreateTest {
     public void cantCreateCourierWithoutLogin() {
         Courier courier = Courier.getRandom();
         courier.setLogin(null);
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .and()
-                        .body(courier)
-                        .when()
-                        .post("/api/v1/courier");
+        Response response = sendPostRequestCourierRegistration(courier);
         response.then().assertThat().statusCode(400);
         response.then().assertThat().body("message",equalTo("Недостаточно данных для создания учетной записи"));
     }
@@ -74,15 +53,15 @@ public class CourierCreateTest {
     public void cantCreateCourierWithoutPassword() {
         Courier courier = Courier.getRandom();
         courier.setPassword(null);
-        Response response =
-                given()
-                        .header("Content-type", "application/json")
-                        .and()
-                        .body(courier)
-                        .when()
-                        .post("/api/v1/courier");
+        Response response = sendPostRequestCourierRegistration(courier);
         response.then().assertThat().statusCode(400);
         response.then().assertThat().body("message",equalTo("Недостаточно данных для создания учетной записи"));
+    }
+
+    @Step("Send POST request")
+    public Response sendPostRequestCourierRegistration(Courier courier) {
+        Response response = given().header("Content-type", "application/json").and().body(courier).post("/api/v1/courier");
+        return response;
     }
 
 }

@@ -1,3 +1,4 @@
+import com.github.javafaker.Faker;
 import io.restassured.response.Response;
 
 import static io.restassured.RestAssured.given;
@@ -90,14 +91,16 @@ public class Order {
     }
 
     public Order(String stringColor) {
-        this.firstName = "Naruto";
-        this.lastName = "Uchiha";
-        this.address = "Konoha, 142 apt.";
-        this.metroStation = "4";
-        this.phone = "+7 800 355 35 35";
-        this.rentTime = 5;
-        this.deliveryDate = "2020-06-06";
-        this.comment = "Saske, come back to Konoha";
+        Faker faker = new Faker();
+
+        this.firstName = faker.name().firstName();
+        this.lastName = faker.name().lastName();
+        this.address = faker.address().fullAddress();
+        this.metroStation = faker.number().digit();
+        this.phone = faker.phoneNumber().phoneNumber();
+        this.rentTime = faker.number().randomDigit();
+        this.deliveryDate = faker.backToTheFuture().date();
+        this.comment = faker.dune().character();
         this.color = new String[]{stringColor};
 
     }
