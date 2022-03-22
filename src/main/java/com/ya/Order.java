@@ -1,3 +1,5 @@
+package com.ya;
+
 import com.github.javafaker.Faker;
 import io.restassured.response.Response;
 

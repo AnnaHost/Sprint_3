@@ -8,6 +8,8 @@
     <artifactId>Sprint_3</artifactId>
     <version>1.0-SNAPSHOT</version>
 
+
+
     <properties>
         <!-- версия Aspectj -->
         <aspectj.version>1.9.7</aspectj.version>
